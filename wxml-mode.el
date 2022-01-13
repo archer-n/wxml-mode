@@ -8,10 +8,6 @@
 (require 'sgml-mode)
 (require 'company)
 
-(easy-menu-define sgml-mode-menu sgml-mode-map
-  "Menu for WXML mode."
-  '("WXML"
-    ["Format" wxml-format-buffer]))
 
 (define-derived-mode wxml-mode sgml-mode "WXML"
    "Major mode for editing wxml."
@@ -29,6 +25,11 @@
   (let ((map (make-keymap)))	;`sparse' doesn't allow binding to charsets.
     map)
   "Keymap for WXML mode. ")
+
+(easy-menu-define wxml-mode-menu sgml-mode-map
+  "Menu for WXML mode."
+  '("WXML"
+    ["Format" wxml-format-buffer]))
 
 ;; electric
 (defun wxml-electric-pair-conservative-inhibit (char)
