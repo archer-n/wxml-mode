@@ -1,5 +1,6 @@
 <page>
   <view id="wxml-mode">
-    <text>hello, world!</text>
+    <text>hello, wxml.</text>
   </view>
 </page>
+
