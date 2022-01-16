@@ -11,6 +11,7 @@
 
 (define-derived-mode wxml-mode sgml-mode "WXML"
    "Major mode for editing wxml."
+   
    (setq-local electric-pair-inhibit-predicate #'wxml-electric-pair-conservative-inhibit)
    (setq-local sgml-quick-keys 'close)
    (setq-local completion-at-point-functions '(wxml-completion-at-point))
@@ -19,6 +20,7 @@
    (setq-local company-idle-delay 0))
 
 (add-to-list 'auto-mode-alist '("\\.wxml\\'" . wxml-mode))
+
 
 ;; keymap
 (defvar wxml-mode-map
@@ -42,33 +44,16 @@
    ;; I also find it often preferable not to pair next to a word.
    (eq (char-syntax (following-char)) ?w)))
 
-
 ;; completion
-(defun wxml-completion-tag-name ()
-  (let ((json-object-type 'alist)
-        (wxml-data (json-read-file "/home/archer/.emacs.d/site-lisp/wxml-mode/wxml-data.json")))
-    (wxml-completion-tags (cdr (assq 'tags wxml-data)))))
-
-(defun wxml-completion-tags (wxml-tags)
-  (if (vectorp wxml-tags)
-      (let ((list (append wxml-tags nil)))
-        (mapcar (lambda (wxml-tag)
-                  (let ((tag (cdr (assq 'name wxml-tag)))
-                        (signature (cdr (assq 'description wxml-tag))))
-                    (wxml-put-property tag 'signature signature)))
-                list))))
+(defvar wxml-data-file (expand-file-name "wxml-data.json" (file-name-directory load-file-name)))
+(defconst wxml-data (let ((json-object-type 'alist))
+                      (json-read-file wxml-data-file)))
 
 (defun wxml-completion-at-point ()
-  (let ((symbol (company-grab-line "<[[:space:]]*\\([[:alnum:]_-]\\)*")))
-    (if symbol
-        (let ((beg (- (point) (length symbol) -1)) (end (point)))
-            (list beg
-                  end
-                  (completion-table-dynamic
-                   (lambda (_)
-                     (wxml-completion-tag-name)))
-                  :annotation-function #'wxml-capf--get-annotation
-                  :company-docsig #'wxml-cap--get-docsig)))))
+  (let ((tag (wxml-capf-grab-tag))
+        (attribute (wxml-capf-grab-attribute)))
+    (cond ((stringp tag) (wxml-tag-completion-at-point tag))
+          ((stringp attribute) (wxml-attr-completion-at-point attribute)))))
 
 
 (defun wxml-capf--get-annotation (str)
@@ -82,6 +67,84 @@ STR is a candidate in a capf session.  See the implementation of
 STR is a candidate in a capf session.  See the implementation of
 `wxml-completion-at-point'."
   (wxml-get-property 'signature str))
+
+;; tag
+
+(defun wxml-capf-grab-tag ()
+  (let ((symbol (company-grab-line "<[[:space:]]*\\([[:alnum:]_-]\\)*")))
+    (when (stringp symbol)
+      (substring symbol 1))))
+
+(defun wxml-completion-tag-name ()
+  (wxml-completion-tags (cdr (assq 'tags wxml-data))))
+
+(defun wxml-completion-tags (wxml-tags)
+  (if (vectorp wxml-tags)
+      (let ((list (append wxml-tags nil)))
+        (mapcar (lambda (wxml-tag)
+                  (let ((tag (cdr (assq 'name wxml-tag)))
+                        (signature (cdr (assq 'description wxml-tag))))
+                    (wxml-put-property tag 'signature signature)))
+                list))))
+
+(defun wxml-tag-completion-at-point (tag)
+  (let ((beg (- (point) (length tag))) (end (point)))
+                              (list beg
+                                    end
+                                    (completion-table-dynamic
+                                     (lambda (_)
+                                       (wxml-completion-tag-name)))
+                                    :annotation-function #'wxml-capf--get-annotation
+                                    :company-docsig #'wxml-cap--get-docsig)))
+
+;; attr
+
+(defun wxml-capf-grab-attribute ()
+  (let ((symbol (company-grab-line "\\(?:<[[:alnum:]]+\\([[:space:]]+[[:alnum:]]+=\".*\"\\)*[[:space:]]+[[:alnum:]]+\\)")))
+    (when (stringp symbol)
+      (let* ((list (split-string symbol))
+             (tag-name (substring (car list) 1))
+             (attr-name (car (last list))))
+        (wxml-put-property attr-name 'tag tag-name)))))
+
+
+(defun wxml-completion-global-attr ()
+  (let ((global-attrs (cdr (assq 'globalAttributes wxml-data))))
+    (when global-attrs
+      (let ((list (append global-attrs nil)))
+        (mapcar (lambda (attr)
+                  (let ((name (cdr (assq 'name attr)))
+                        (annotation (cdr (assq 'attrType attr)))
+                        (signature (cdr (assq 'description attr))))
+                    (wxml-put-property name 'annotation annotation 'signature signature)))
+                list)))))
+
+(defun wxml-attr-completion-at-point (attr)
+  (let* ((end (point))
+         (beg (- end (length attr))))
+                              (list beg
+                                    end
+                                    (completion-table-dynamic
+                                     (lambda (_)
+                                       (wxml-completion-global-attr)))
+                                    :annotation-function #'wxml-capf--get-annotation
+                                    :company-docsig #'wxml-cap--get-docsig)))
+;; attr-value
+(defconst wxml-get-attribute-value-re
+  (concat "<[[:space:]]*\\([[:alnum:]_-]+\\)[^>]*"
+          "[^[:alnum:]>_-]\\([[:alnum:]_-]+\\)=\"\\([[:alnum:]_-]*\\)")
+  "Regexp of wxml attribute")
+
+(defun wxml-grab-attribute-value ()
+  (let ((sybmol (company-grab-line wxml-get-attribute-value-re)))
+    (when sybmol
+        (let* ((list (split-string sybmol))
+               (tag-name (substring (car list) 1))
+               (attribute (split-string (car (last list)) "=\""))
+               (attr-name (car attribute))
+               (attr-value (cadr attribute)))
+          (wxml-put-property attr-name 'tag tag-name 'attr-value attr-value)
+          attr-name))))
 
 ;;;; Text property
 
