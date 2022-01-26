@@ -14,10 +14,6 @@
 ;; keymap
 (defvar wxml-mode-map
   (let ((map (make-keymap)))	;`sparse' doesn't allow binding to charsets.
-    (define-key map (kbd "M-f") #'forward-sexp)
-    (define-key map (kbd "M-b") #'backward-sexp)
-    (define-key map (kbd "C-M-f") #'sgml-skip-tag-forward)
-    (define-key map (kbd "C-M-b") #'sgml-skip-tag-backward)
     map)
   "Keymap for WXML mode. ")
 
