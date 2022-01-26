@@ -9,29 +9,33 @@
 (require 'company)
 
 
-(define-derived-mode wxml-mode sgml-mode "WXML"
-   "Major mode for editing wxml."
-   
-   (setq-local electric-pair-inhibit-predicate #'wxml-electric-pair-conservative-inhibit)
-   (setq-local sgml-quick-keys 'close)
-   (setq-local completion-at-point-functions '(wxml-completion-at-point))
-   (setq-local company-backends '(company-capf))
-   (setq-local company-minimum-prefix-length 0)
-   (setq-local company-idle-delay 0))
-
-(add-to-list 'auto-mode-alist '("\\.wxml\\'" . wxml-mode))
 
 
 ;; keymap
 (defvar wxml-mode-map
   (let ((map (make-keymap)))	;`sparse' doesn't allow binding to charsets.
+    (define-key map (kbd "M-f") #'forward-sexp)
+    (define-key map (kbd "M-b") #'backward-sexp)
+    (define-key map (kbd "C-M-f") #'sgml-skip-tag-forward)
+    (define-key map (kbd "C-M-b") #'sgml-skip-tag-backward)
     map)
   "Keymap for WXML mode. ")
 
-(easy-menu-define wxml-mode-menu sgml-mode-map
+(easy-menu-define wxml-mode-menu wxml-mode-map
   "Menu for WXML mode."
   '("WXML"
     ["Format" wxml-format-buffer]))
+
+(define-derived-mode wxml-mode sgml-mode "WXML"
+   "Major mode for editing wxml."
+   (setq-local electric-pair-inhibit-predicate #'wxml-electric-pair-conservative-inhibit)
+   (setq-local sgml-quick-keys 'close)
+   (setq-local completion-at-point-functions '(wxml-completion-at-point))
+   (setq-local company-minimum-prefix-length 0)
+   (setq-local company-idle-delay 0))
+
+(add-to-list 'auto-mode-alist '("\\.wxml\\'" . wxml-mode))
+
 
 ;; electric
 (defun wxml-electric-pair-conservative-inhibit (char)
@@ -187,5 +191,3 @@ is prefixed by \"wxml-\".  Propertized STR is returned."
 
 (provide 'wxml-mode)
 ;;; wxml-mode.el ends here
-
-
