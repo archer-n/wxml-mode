@@ -1,8 +1,4 @@
-<page>
-  <view id="wxml-mode">
-    <text id="wxml-text">hello, wxml.</text>
-    <button bindtap="clickMe">click me!</button>
-    <text 
-  </view>
-</page>
-
+<view id="wxml-mode">
+  <text>hello, world!</text>
+  <button bindtap="clickMe">clickMe!</button>
+</view>
