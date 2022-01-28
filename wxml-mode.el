@@ -11,7 +11,6 @@
 ;; keymap
 (defvar wxml-mode-map
   (let ((map (make-keymap)))	;`sparse' doesn't allow binding to charsets.
-    (define-key map (kbd "C-M-f")  #'wxml-format-buffer)
     (define-key map ">" 'nxml-balanced-close-start-tag-inline)
     (define-key map (kbd "=") (lambda  () (interactive)
                                 (if (wxml-capf-grab-attribute)
