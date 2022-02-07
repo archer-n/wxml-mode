@@ -117,12 +117,23 @@
   (let ((attribute (wxml-data-find-tag-attribute tag attr)))
     (plist-get attribute :values)))
 
+(defun wxml-data-find-tag-attribute-values-to-completion-table (tag-name attr-name)
+  (let ((values (wxml-data-find-tag-attribute-values tag-name attr-name)))
+    (if (vectorp values)
+        (mapcar (lambda (value)
+                (let ((name (plist-get value :name))
+                      (description (plist-get value :description))
+                      (annotation "value"))
+                  (wxml-put-property name 'annotation annotation 'signature description)))
+              values))))
 
 (defun wxml-completion-at-point ()
   (let ((tag (wxml-capf-grab-tag))
-        (attribute (wxml-capf-grab-attribute)))
+        (attribute (wxml-capf-grab-attribute))
+        (attribute-value (wxml-capf-grab-attribute-value)))
     (cond ((stringp tag) (wxml-tag-completion-at-point tag))
-          ((stringp attribute) (wxml-attr-completion-at-point attribute)))))
+          ((stringp attribute) (wxml-attr-completion-at-point attribute))
+          ((stringp attribute-value) (wxml-attribute-value-completion-at-point attribute-value)))))
 
 
 (defun wxml-capf--get-annotation (str)
@@ -200,7 +211,7 @@ STR is a candidate in a capf session.  See the implementation of
           "[^[:alnum:]>_-]\\([[:alnum:]_-]+\\)=\"\\([[:alnum:]_-]*\\)")
   "Regexp of wxml attribute")
 
-(defun wxml-grab-attribute-value ()
+(defun wxml-capf-grab-attribute-value ()
   (let ((sybmol (company-grab-line wxml-get-attribute-value-re)))
     (when sybmol
         (let* ((list (split-string sybmol))
@@ -210,6 +221,21 @@ STR is a candidate in a capf session.  See the implementation of
                (attr-value (cadr attribute)))
           (wxml-put-property attr-name 'tag tag-name 'attr-value attr-value)
           attr-name))))
+
+(defun wxml-attribute-value-completion-at-point (attr-name)
+  (let* ((tag-name (wxml-get-property 'tag attr-name))
+         (attr-value (wxml-get-property 'attr-value attr-name))
+         (end (point))
+         (beg (- end (length attr-value))))
+                              (list beg
+                                    end
+                                    (completion-table-dynamic
+                                     (lambda (_)
+                                       (flatten-list
+                                        (list
+                                         (wxml-data-find-tag-attribute-values-to-completion-table tag-name attr-name)))))
+                                    :annotation-function #'wxml-capf--get-annotation
+                                    :company-docsig #'wxml-cap--get-docsig)))
 
 ;;;; Text property
 
