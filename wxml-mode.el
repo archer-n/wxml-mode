@@ -168,16 +168,17 @@ STR is a candidate in a capf session.  See the implementation of
 ;; attr
 
 (defun wxml-capf-grab-attribute ()
-  (let ((symbol (company-grab-line "\\(?:<[[:alnum:]]+\\([[:space:]]+[[:alnum:]]+=\".*\"\\)*[[:space:]]+[[:alnum:]]*\\)")))
+  (let ((symbol (company-grab
+                 "\\(?:<[[:alnum:]]+\\([[:space:]]+\\(?:[[:alnum:]]\\|-\\|:\\)+\\(=\".*\"\\)?\\)*[[:space:]]+\\(?:[[:alnum:]]\\|-\\|:\\)*\\)"
+                 nil
+                 (save-excursion (re-search-backward (rx (or (+ "<" alnum) "</")) nil t 1)))))
     (when (stringp symbol)
-      (let* ((list (split-string symbol))
+      (let* ((list (split-string symbol split-string-default-separators nil))
              (tag-name (substring (car list) 1))
              (attr-name (if (length> list 1)
                             (car (last list))
                           "")))
         (wxml-put-property tag-name 'attr-name attr-name)))))
-
-
 
 (defun wxml-attr-completion-at-point (tag)
   (let* ((attr (wxml-get-property 'attr-name tag))
